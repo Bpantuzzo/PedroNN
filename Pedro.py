@@ -1,6 +1,10 @@
 import streamlit as st
+from PIL import Image
+import requests
+from io import BytesIO
+import time
 
-# 1. Configuração da página Streamlit
+# Configuração da página
 st.set_page_config(
     page_title="Quiz do Pedro",
     page_icon="👶",
@@ -8,17 +12,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. CSS personalizado com cores pastéis
+# CSS personalizado com cores pastéis
 st.markdown("""
     <style>
     .main {
         background: linear-gradient(135deg, #A0D8F7 0%, #FFB6D9 50%, #FFF4A3 100%);
         padding: 20px;
-        min-height: 100vh; /* Garante que o fundo cubra toda a altura */
     }
     
     .stButton > button {
-        background-color: #FFB6D9; /* Rosa Pastel */
+        background-color: #FFB6D9;
         color: white;
         font-weight: bold;
         border-radius: 10px;
@@ -26,23 +29,16 @@ st.markdown("""
         font-size: 16px;
         border: none;
         width: 100%;
-        transition: background-color 0.3s ease, transform 0.3s ease;
     }
     
-    .stButton > button:hover:not(:disabled) {
-        background-color: #A0D8F7; /* Azul Pastel */
-        transform: scale(1.02);
-    }
-
-    .stButton > button:disabled {
-        background-color: #cccccc; /* Cinza para botões desabilitados */
-        cursor: not-allowed;
+    .stButton > button:hover {
+        background-color: #A0D8F7;
+        transform: scale(1.05);
     }
     
     .stRadio > label {
         font-size: 16px;
         font-weight: 500;
-        color: #333;
     }
     
     h1 {
@@ -50,166 +46,177 @@ st.markdown("""
         color: #333;
         font-size: 36px;
         margin-bottom: 20px;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
     
     h2 {
         color: #555;
         text-align: center;
-        margin-top: 30px;
-        margin-bottom: 20px;
     }
     
     .resultado {
         text-align: center;
-        font-size: 28px;
+        font-size: 24px;
         font-weight: bold;
         color: #333;
-        padding: 25px;
-        background-color: rgba(255, 255, 255, 0.85);
-        border-radius: 15px;
-        margin: 30px 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 10px;
+        margin: 20px 0;
     }
-
-    .stProgress > div > div > div > div {
-        background-color: #A0D8F7; /* Azul Pastel para a barra de progresso */
+    
+    .x-vermelho {
+        font-size: 120px;
+        color: red;
+        text-align: center;
+        font-weight: bold;
+        animation: piscar 1s;
+    }
+    
+    .x-verde {
+        font-size: 120px;
+        color: green;
+        text-align: center;
+        font-weight: bold;
+        animation: piscar 1s;
+    }
+    
+    @keyframes piscar {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Dados do quiz
+# Dados do quiz
 quiz_data = [
     {
-        "pergunta": "Qual o nome do nosso bebê?",
-        "opcoes": ["Onofre", "João", "Clovis", "Pedro"],
-        "resposta_correta": 3  # Índice de "Pedro"
+        "pergunta": "Qual o nome do bebê?",
+        "opcoes": ["Clovis", "Pedro", "Lucas", "Mateus"],
+        "resposta_correta": 1
     },
     {
         "pergunta": "Quantos anos ele tem?",
-        "opcoes": ["2", "11 meses", "3", "10"],
-        "resposta_correta": 1  # Índice de "11 meses"
+        "opcoes": ["2", "10", "3", "11 meses"],
+        "resposta_correta": 3
     },
     {
         "pergunta": "Qual o sobrenome dele?",
         "opcoes": ["Silva", "Pantuso", "Santos", "Oliveira"],
-        "resposta_correta": 1  # Índice de "Pantuso"
+        "resposta_correta": 1
     },
     {
         "pergunta": "Quantos irmãos ele tem?",
         "opcoes": ["1", "0", "2", "3"],
-        "resposta_correta": 1  # Índice de "0"
+        "resposta_correta": 1
     },
     {
-        "pergunta": "Ele nasceu em qual estado?",
-        "opcoes": ["MG", "SP", "PA", "ES"],
-        "resposta_correta": 0  # Índice de "MG"
+        "pergunta": "Onde ele nasceu?",
+        "opcoes": ["MG", "Sri Lanka", "ES", "SP"],
+        "resposta_correta": 0
     }
 ]
 
-# 10. Session state para gerenciar o estado do quiz
+# Inicializar session state
 if "pergunta_atual" not in st.session_state:
     st.session_state.pergunta_atual = 0
-    # Armazena o índice da opção selecionada
-    st.session_state.respostas_usuario = [None] * len(quiz_data)
+    st.session_state.respostas = [None] * len(quiz_data)
     st.session_state.quiz_terminado = False
     st.session_state.nota = 0
+    st.session_state.mostrar_feedback = False
+    st.session_state.feedback_tipo = None
 
-# Função para reiniciar o quiz
-
-
-def reset_quiz():
-    st.session_state.pergunta_atual = 0
-    st.session_state.respostas_usuario = [None] * len(quiz_data)
-    st.session_state.quiz_terminado = False
-    st.session_state.nota = 0
-
-
-# Título do aplicativo
+# Cabeçalho
 st.markdown("<h1>👶 Quiz do Pedro 👶</h1>", unsafe_allow_html=True)
 
-# 7. Tela de resultado
+# Se o quiz terminou, mostrar resultado
 if st.session_state.quiz_terminado:
-    st.markdown(
-        f"<div class='resultado'>Sua nota: {st.session_state.nota}%</div>", unsafe_allow_html=True)
-
-    # Imagem do Pedro (placeholder)
-    # Para usar uma imagem real:
-    # 1. Coloque o arquivo da imagem (ex: pedro.png) na mesma pasta do seu script.
-    # 2. Substitua a URL abaixo pelo nome do arquivo: st.image("pedro.png", ...)
-    # Ou use uma URL de imagem online: st.image("https://sua-url-da-imagem.com/pedro.jpg", ...)
-    st.image("charme.png",
-             caption="Nosso Pedro! 💕",
-             use_container_width=True)  # 9. Usar use_container_width=True
-    st.info("Retire sua missão com os pais que estão ao seu lado, caso aceitem")
-
+    st.markdown(f"<div class='resultado'>Sua nota: {st.session_state.nota}%</div>", unsafe_allow_html=True)
+    
+    # Tentar mostrar a imagem do Pedro
+    try:
+        st.image("charme.png", 
+                 caption="Nosso Pedro! 💕", 
+                 use_container_width=True)
+    except:
+        st.info("🎉 Parabéns! Você completou o quiz do Pedro!")
+    
     col1, col2 = st.columns(2)
     with col1:
-        # 9. Usar use_container_width=True
         if st.button("🔄 Jogar Novamente", use_container_width=True):
-            reset_quiz()
+            st.session_state.pergunta_atual = 0
+            st.session_state.respostas = [None] * len(quiz_data)
+            st.session_state.quiz_terminado = False
+            st.session_state.nota = 0
+            st.session_state.mostrar_feedback = False
+            st.session_state.feedback_tipo = None
             st.rerun()
+    
     with col2:
-        if st.button("❌ Sair", use_container_width=True):  # 9. Usar use_container_width=True
+        if st.button("❌ Sair", use_container_width=True):
             st.balloons()
-            st.stop()  # Encerra a execução do script
 
 # Quiz em andamento
 else:
-    # 5. Sistema de progresso com barra
+    # Mostrar feedback visual
+    if st.session_state.mostrar_feedback:
+        if st.session_state.feedback_tipo == "correto":
+            st.markdown("<div class='x-verde'>✓</div>", unsafe_allow_html=True)
+        elif st.session_state.feedback_tipo == "errado":
+            st.markdown("<div class='x-vermelho'>✕</div>", unsafe_allow_html=True)
+        
+        time.sleep(1)
+        
+        # Passar para próxima pergunta
+        if st.session_state.pergunta_atual < len(quiz_data) - 1:
+            st.session_state.pergunta_atual += 1
+        else:
+            # Calcular nota e terminar
+            acertos = sum(1 for r in st.session_state.respostas if r == True)
+            st.session_state.nota = int((acertos / len(quiz_data)) * 100)
+            st.session_state.quiz_terminado = True
+        
+        st.session_state.mostrar_feedback = False
+        st.session_state.feedback_tipo = None
+        st.rerun()
+    
+    # Barra de progresso
     progresso = (st.session_state.pergunta_atual + 1) / len(quiz_data)
     st.progress(progresso)
-    st.markdown(f"**Pergunta {st.session_state.pergunta_atual + 1} de {len(quiz_data)}**",
+    st.markdown(f"**Pergunta {st.session_state.pergunta_atual + 1} de {len(quiz_data)}**", 
                 help=f"Progresso: {int(progresso * 100)}%")
-
+    
+    # Pergunta atual
     pergunta_info = quiz_data[st.session_state.pergunta_atual]
-    st.markdown(
-        f"<h2>{pergunta_info['pergunta']}</h2>", unsafe_allow_html=True)
-
-    # Recupera a resposta previamente selecionada para a pergunta atual, se houver
-    default_index = st.session_state.respostas_usuario[st.session_state.pergunta_atual]
-
+    st.markdown(f"<h2>{pergunta_info['pergunta']}</h2>", unsafe_allow_html=True)
+    
     # Opções de resposta
-    resposta_selecionada_idx = st.radio(
+    resposta_selecionada = st.radio(
         "Escolha uma opção:",
         options=range(len(pergunta_info['opcoes'])),
         format_func=lambda x: pergunta_info['opcoes'][x],
-        index=default_index,  # Define a opção selecionada por padrão
-        # Chave única para cada grupo de rádio
-        key=f"pergunta_{st.session_state.pergunta_atual}"
+        key=f"resposta_{st.session_state.pergunta_atual}"
     )
-
-    # Armazena a seleção atual do usuário no session state
-    st.session_state.respostas_usuario[st.session_state.pergunta_atual] = resposta_selecionada_idx
-
+    
+    # Botão próxima
     col1, col2 = st.columns(2)
-
-    # 5. Navegação entre perguntas (anterior/próximo)
+    
     with col1:
-        # 9. Usar use_container_width=True
         if st.button("⬅️ Anterior", use_container_width=True, disabled=(st.session_state.pergunta_atual == 0)):
-            st.session_state.pergunta_atual -= 1
-            st.rerun()
-
+            if st.session_state.pergunta_atual > 0:
+                st.session_state.pergunta_atual -= 1
+                st.rerun()
+    
     with col2:
-        if st.button("Próximo ➡️", use_container_width=True):  # 9. Usar use_container_width=True
-            # 11. Validação de resposta correta (verifica se uma opção foi selecionada)
-            if st.session_state.respostas_usuario[st.session_state.pergunta_atual] is None:
-                st.warning(
-                    "Por favor, selecione uma opção antes de prosseguir.")
+        if st.button("Próximo ➡️", use_container_width=True):
+            pergunta_info = quiz_data[st.session_state.pergunta_atual]
+            
+            # Verificar resposta
+            if resposta_selecionada == pergunta_info['resposta_correta']:
+                st.session_state.respostas[st.session_state.pergunta_atual] = True
+                st.session_state.feedback_tipo = "correto"
             else:
-                if st.session_state.pergunta_atual < len(quiz_data) - 1:
-                    st.session_state.pergunta_atual += 1
-                    st.rerun()
-                else:
-                    # Fim do quiz, calcular nota
-                    acertos = 0
-                    for i, resposta_dada_idx in enumerate(st.session_state.respostas_usuario):
-                        if resposta_dada_idx == quiz_data[i]["resposta_correta"]:
-                            acertos += 1
-
-                    # 6. Cálculo de nota final em porcentagem
-                    st.session_state.nota = int(
-                        (acertos / len(quiz_data)) * 100)
-                    st.session_state.quiz_terminado = True
-                    st.rerun()
+                st.session_state.respostas[st.session_state.pergunta_atual] = False
+                st.session_state.feedback_tipo = "errado"
+            
+            st.session_state.mostrar_feedback = True
+            st.rerun()
