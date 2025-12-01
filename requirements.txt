@@ -6,3 +6,5 @@ Image
 requests
 BytesIO
 time
+PIL
+io
