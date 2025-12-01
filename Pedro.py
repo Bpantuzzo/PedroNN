@@ -82,7 +82,7 @@ st.markdown("""
 quiz_data = [
     {
         "pergunta": "Qual o nome do nosso bebê?",
-        "opcoes": ["João", "Clovis", "Pedro"],
+        "opcoes": ["Onofre", "João", "Clovis", "Pedro"],
         "resposta_correta": 3  # Índice de "Pedro"
     },
     {
