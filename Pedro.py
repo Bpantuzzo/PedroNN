@@ -18,7 +18,7 @@ st.markdown("""
     }
     
     .stButton > button {
-        background-color: #FFB6D9;
+        background-color: #FFE100;
         color: white;
         font-weight: bold;
         border-radius: 10px;
@@ -29,7 +29,7 @@ st.markdown("""
     }
     
     .stButton > button:hover {
-        background-color: #A0D8F7;
+        background-color: #3E9EA3;
         transform: scale(1.05);
     }
     
@@ -123,7 +123,7 @@ if "pergunta_atual" not in st.session_state:
     st.session_state.feedback_tipo = None
 
 # Cabeçalho
-st.markdown("<h1>👶 Quiz do Pedro 👶</h1>", unsafe_allow_html=True)
+st.markdown("<h1>👶 Quiz 👶</h1>", unsafe_allow_html=True)
 
 # Se o quiz terminou, mostrar resultado
 if st.session_state.quiz_terminado:
