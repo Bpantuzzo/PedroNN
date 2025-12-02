@@ -1,7 +1,4 @@
 import streamlit as st
-from PIL import Image
-import requests
-from io import BytesIO
 import time
 
 # Configuração da página
@@ -90,7 +87,7 @@ st.markdown("""
 # Dados do quiz
 quiz_data = [
     {
-        "pergunta": "Qual o nome do bebê?",
+        "pergunta": "Qual o nome do nosso bebê?",
         "opcoes": ["Clovis", "Pedro", "Lucas", "Mateus"],
         "resposta_correta": 1
     },
@@ -106,13 +103,13 @@ quiz_data = [
     },
     {
         "pergunta": "Quantos irmãos ele tem?",
-        "opcoes": ["1", "0", "2", "3"],
-        "resposta_correta": 1
+        "opcoes": ["1", "5", "2", "0"],
+        "resposta_correta": 3
     },
     {
         "pergunta": "Onde ele nasceu?",
-        "opcoes": ["MG", "Sri Lanka", "ES", "SP"],
-        "resposta_correta": 0
+        "opcoes": ["SP", "MG", "RJ", "PA"],
+        "resposta_correta": 1
     }
 ]
 
@@ -132,13 +129,15 @@ st.markdown("<h1>👶 Quiz do Pedro 👶</h1>", unsafe_allow_html=True)
 if st.session_state.quiz_terminado:
     st.markdown(f"<div class='resultado'>Sua nota: {st.session_state.nota}%</div>", unsafe_allow_html=True)
     
-    # Tentar mostrar a imagem do Pedro
+    st.info("🎉 Parabéns! Você completou o quiz do Pedro!")
+    
+    # Exibir imagem do Pedro
     try:
-        st.image("charme.png", 
+        st.image("FotoNN.png", 
                  caption="Nosso Pedro! 💕", 
                  use_container_width=True)
     except:
-        st.info("🎉 Parabéns! Você completou o quiz do Pedro!")
+        st.warning("Imagem não encontrada. Coloque o arquivo na mesma pasta do app.")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -182,8 +181,7 @@ else:
     # Barra de progresso
     progresso = (st.session_state.pergunta_atual + 1) / len(quiz_data)
     st.progress(progresso)
-    st.markdown(f"**Pergunta {st.session_state.pergunta_atual + 1} de {len(quiz_data)}**", 
-                help=f"Progresso: {int(progresso * 100)}%")
+    st.markdown(f"**Pergunta {st.session_state.pergunta_atual + 1} de {len(quiz_data)}**")
     
     # Pergunta atual
     pergunta_info = quiz_data[st.session_state.pergunta_atual]
