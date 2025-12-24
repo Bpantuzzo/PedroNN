@@ -151,7 +151,7 @@ if st.session_state.quiz_terminado:
             st.rerun()
     
     with col2:
-        if st.button("❌ ACEITAMOS!!!!!", use_container_width=True):
+        if st.button("💕💕 ACEITAMOS!!!!!💕💕", use_container_width=True):
             st.balloons()
 
 # Quiz em andamento
@@ -218,4 +218,5 @@ else:
             
             st.session_state.mostrar_feedback = True
             st.rerun()
+
 
